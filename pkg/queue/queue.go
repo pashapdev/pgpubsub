@@ -45,30 +45,30 @@ func (q *Queue) Subscriber() *Subscriber {
 
 func (q *Queue) prepareDB(ctx context.Context) error {
 	const (
-		createTable = `CREATE TABLE if not exists %s (
+		createTable = `CREATE TABLE if not exists %[1]s (
 			id serial,
 			payload text
 		  );`
 
-		createFunction = `CREATE OR REPLACE FUNCTION notify_%s() RETURNS TRIGGER AS $$
+		createFunction = `CREATE OR REPLACE FUNCTION notify_%[1]s() RETURNS TRIGGER AS $$
 		DECLARE 
 			notification json;
 		BEGIN
 			notification = json_build_object('payload', NEW.payload);
-			PERFORM pg_notify('%s',notification::text);
+			PERFORM pg_notify('%[1]s',notification::text);
 			RETURN NULL; 
 		END;
 		$$ LANGUAGE plpgsql;`
 
-		enableTrigger = `DROP TRIGGER IF EXISTS %s_notify_%s on %s;
-		CREATE TRIGGER %s_notify_%s
-		AFTER INSERT ON %s
-			FOR EACH ROW EXECUTE PROCEDURE notify_%s();`
+		enableTrigger = `DROP TRIGGER IF EXISTS %[1]s_notify_%[1]s on %[1]s;
+		CREATE TRIGGER %[1]s_notify_%[1]s
+		AFTER INSERT ON %[1]s
+			FOR EACH ROW EXECUTE PROCEDURE notify_%[1]s();`
 	)
 	queries := [3]string{
 		fmt.Sprintf(createTable, q.channel),
-		fmt.Sprintf(createFunction, q.channel, q.channel),
-		fmt.Sprintf(enableTrigger, q.channel, q.channel, q.channel, q.channel, q.channel, q.channel, q.channel)}
+		fmt.Sprintf(createFunction, q.channel),
+		fmt.Sprintf(enableTrigger, q.channel)}
 
 	tx, err := q.db.BeginTx(ctx, nil)
 	if err != nil {
