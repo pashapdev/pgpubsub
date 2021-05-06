@@ -26,10 +26,11 @@ func main() {
 		panic(err)
 	}
 	defer q.Close()
+	ctx := context.Background()
 
 	sub1 := q.Subscriber()
 	defer sub1.Close()
-	ch1, err := sub1.Subscribe()
+	ch1, err := sub1.Subscribe(ctx)
 	if err != nil {
 		panic(err)
 	}
@@ -37,7 +38,7 @@ func main() {
 
 	sub2 := q.Subscriber()
 	defer sub2.Close()
-	ch2, err := sub2.Subscribe()
+	ch2, err := sub2.Subscribe(ctx)
 	if err != nil {
 		panic(err)
 	}

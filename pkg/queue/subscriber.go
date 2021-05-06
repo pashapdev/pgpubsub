@@ -1,6 +1,7 @@
 package queue
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -24,7 +25,7 @@ func NewSubscriber(connString string, channel string) *Subscriber {
 	return &Subscriber{channel: channel, connString: connString}
 }
 
-func (s *Subscriber) Subscribe() (notify *Notify, err error) {
+func (s *Subscriber) Subscribe(ctx context.Context) (notify *Notify, err error) {
 	if s.listener != nil {
 		return nil, errors.New("already subscribe")
 	}
@@ -45,7 +46,7 @@ func (s *Subscriber) Subscribe() (notify *Notify, err error) {
 		return nil, err
 	}
 
-	return waitForNotification(s.listener), nil
+	return waitForNotification(ctx, s.listener), nil
 }
 
 func (s *Subscriber) Close() {
@@ -54,7 +55,7 @@ func (s *Subscriber) Close() {
 	}
 }
 
-func waitForNotification(l *pq.Listener) *Notify {
+func waitForNotification(ctx context.Context, l *pq.Listener) *Notify {
 	notify := NewNotify()
 	go func() {
 		for {
@@ -63,6 +64,9 @@ func waitForNotification(l *pq.Listener) *Notify {
 				if n != nil {
 					notify.Messages <- n.Extra
 				}
+			case <-ctx.Done():
+				notify.Err <- ctx.Err()
+				return
 			case <-time.After(timeToCheck):
 				if err := l.Ping(); err != nil {
 					notify.Err <- err
