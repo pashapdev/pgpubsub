@@ -1,4 +1,4 @@
-package queue
+package pgpubsub
 
 type Notify struct {
 	Messages chan string

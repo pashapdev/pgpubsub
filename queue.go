@@ -1,4 +1,4 @@
-package queue
+package pgpubsub
 
 import (
 	"context"
@@ -12,7 +12,7 @@ type Queue struct {
 	channel    string
 }
 
-func New(connString string, channel string) (*Queue, error) {
+func New(connString, channel string) (*Queue, error) {
 	db, err := sql.Open("postgres", connString)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func New(connString string, channel string) (*Queue, error) {
 }
 
 func (q *Queue) Publish(ctx context.Context, message string) error {
-	query := fmt.Sprintf("insert into %s (payload) values ($1)", q.channel)
+	query := fmt.Sprintf("INSERT INTO %s (payload) VALUES ($1)", q.channel) //nolint:gosec
 	_, err := q.db.ExecContext(ctx, query, message)
 	return err
 }
@@ -45,7 +45,7 @@ func (q *Queue) Subscriber() *Subscriber {
 
 func (q *Queue) prepareDB(ctx context.Context) error {
 	const (
-		createTable = `CREATE TABLE if not exists %[1]s (
+		createTable = `CREATE TABLE IF NOT EXISTS %[1]s (
 			id serial,
 			payload text
 		  );`
@@ -77,7 +77,9 @@ func (q *Queue) prepareDB(ctx context.Context) error {
 
 	for _, query := range queries {
 		if _, err = tx.ExecContext(ctx, query); err != nil {
-			tx.Rollback()
+			if errRollback := tx.Rollback(); errRollback != nil {
+				return errRollback
+			}
 			return err
 		}
 	}
