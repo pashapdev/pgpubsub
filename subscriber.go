@@ -1,4 +1,4 @@
-package queue
+package pgpubsub
 
 import (
 	"context"
@@ -21,7 +21,7 @@ type Subscriber struct {
 	connString string
 }
 
-func NewSubscriber(connString string, channel string) *Subscriber {
+func NewSubscriber(connString, channel string) *Subscriber {
 	return &Subscriber{channel: channel, connString: connString}
 }
 
